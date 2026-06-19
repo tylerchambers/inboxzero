@@ -1,13 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { createInitialState, type Email } from "./game/state";
-import {
-  ActionFeedback,
-  DebugEmailCard,
-  DebugScheduledEvents,
-  GameOverSummary,
-  PlayableEmailCard,
-} from "./main";
+import { DebugApp, DebugView } from "./ui/DebugApp";
+import { DebugEmailCard, DebugScheduledEvents } from "./ui/debugComponents";
+import { PlayableApp, PlayableView } from "./ui/PlayableApp";
+import { ActionFeedback, GameOverSummary, PlayableEmailCard } from "./ui/sharedComponents";
 
 const email: Email = {
   id: "email_1",
@@ -129,5 +126,139 @@ describe("playable inbox UI", () => {
     expect(markup).toContain("Processed 4");
     expect(markup).toContain("Mistakes 2");
     expect(markup).toContain("Restart run");
+  });
+
+  test("production app hides debug controls and metadata", () => {
+    const markup = renderToStaticMarkup(<PlayableApp />);
+
+    expect(markup).toContain("Survive the inbox");
+    expect(markup).toContain("Restart Run");
+    expect(markup).toContain("Pause");
+    for (const hiddenText of [
+      "Debug mode",
+      "Playable run",
+      "Tick +1s",
+      "Tick +8s",
+      "Auto tick",
+      "Spawn",
+      "Scheduled events",
+      "Email templates",
+      "Category",
+      "Template",
+      "ID",
+      "Thread",
+    ]) {
+      expect(markup).not.toContain(hiddenText);
+    }
+  });
+
+  test("playable view hides debug metadata with a populated inbox", () => {
+    const state = createInitialState({ capacity: 12 });
+    state.emails[email.id] = email;
+    state.inbox.emailIds = [email.id];
+
+    const markup = renderToStaticMarkup(
+      <PlayableView
+        state={state}
+        emails={[email]}
+        selectedEmail={email}
+        onRestart={noopRestart}
+        onPause={noopRestart}
+        onResume={noopRestart}
+        onSelectEmail={() => undefined}
+        onProcessEmail={noopProcess}
+      />,
+    );
+
+    for (const visibleText of [
+      "security@amaz0n-alerts.example",
+      "Verify your account",
+      "Your account will be locked unless you act now.",
+      "Report Spam",
+      "Restart Run",
+    ]) {
+      expect(markup).toContain(visibleText);
+    }
+    for (const hiddenText of [
+      "Category",
+      "Template",
+      "ID",
+      "Thread",
+      "fake_security_alert",
+      "email_1",
+      "thread_1",
+      "Scheduled events",
+      "Spawn",
+    ]) {
+      expect(markup).not.toContain(hiddenText);
+    }
+  });
+
+  test("debug view exposes QA metadata with a populated inbox", () => {
+    const state = createInitialState();
+    state.emails[email.id] = email;
+    state.inbox.emailIds = [email.id];
+    state.scheduled.push({
+      id: "scheduled_1",
+      dueAt: 10000,
+      event: {
+        type: "SPAWN_EMAIL",
+        source: "escalation",
+        templateId: "checking_on_rollout",
+        parentEmailId: "email_1",
+      },
+    });
+
+    const markup = renderToStaticMarkup(
+      <DebugView
+        state={state}
+        emails={[email]}
+        autoTick={false}
+        setAutoTick={() => undefined}
+        tick={() => undefined}
+        spawn={() => undefined}
+        process={noopProcess}
+        pause={noopRestart}
+        resume={noopRestart}
+        restart={noopRestart}
+      />,
+    );
+
+    for (const visibleText of [
+      "Mechanic cockpit",
+      "Spawn Random",
+      "Scheduled events",
+      "Category",
+      "Template",
+      "ID",
+      "Thread",
+      "fake_security_alert",
+      "email_1",
+      "thread_1",
+      "template checking_on_rollout",
+      "parent email_1",
+    ]) {
+      expect(markup).toContain(visibleText);
+    }
+  });
+
+  test("debug app renders cockpit controls without mode toggle navigation", () => {
+    const markup = renderToStaticMarkup(<DebugApp />);
+
+    for (const visibleText of [
+      "Mechanic cockpit",
+      "Tick +1s",
+      "Tick +8s",
+      "Auto tick",
+      "Restart Debug",
+      "Spawn Random",
+      "Spawn Needs Reply",
+      "Scheduled events",
+      "Email templates",
+    ]) {
+      expect(markup).toContain(visibleText);
+    }
+    expect(markup).not.toContain("Playable run");
+    expect(markup).not.toContain("Debug mode");
   });
 });

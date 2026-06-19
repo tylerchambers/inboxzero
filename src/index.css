@@ -79,6 +79,7 @@ h3 {
 .app-header,
 .playable-layout,
 .debug-panel,
+.production-controls,
 .run-controls,
 .email-card,
 .status-rail,
@@ -115,6 +116,7 @@ h3 {
 }
 
 .mode-toggle,
+.production-controls,
 .button-row,
 .action-bar {
   display: flex;
@@ -146,6 +148,7 @@ h3 {
 .message-list-panel,
 .detail-panel,
 .debug-panel,
+.production-controls,
 .run-controls,
 .email-card {
   border-radius: 1.25rem;
@@ -159,6 +162,7 @@ h3 {
   gap: 1rem;
 }
 
+.production-controls,
 .run-controls {
   display: grid;
   gap: 0.8rem;
@@ -409,6 +413,7 @@ dd {
   }
 
   .mode-toggle,
+  .production-controls,
   .button-row,
   .action-bar {
     width: 100%;

@@ -14,8 +14,8 @@ description = "Run Vite dev server"
 run = "pnpm dev"
 
 [tasks.debug]
-description = "Run the React debug UI on http://127.0.0.1:5173"
-run = "pnpm exec vite --host 127.0.0.1 --port 5173 --strictPort"
+description = "Run the React debug UI on http://127.0.0.1:5173/debug.html"
+run = "pnpm dev:debug"
 
 [tasks.test]
 description = "Run Vitest"

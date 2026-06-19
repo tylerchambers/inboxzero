@@ -3,6 +3,7 @@ import { createStore, type StoreApi } from "zustand/vanilla";
 import { type GameInput, update } from "../game/engine";
 import {
   createInitialState,
+  type Email,
   type EmailId,
   type GameState,
   type PlayerAction,
@@ -23,6 +24,15 @@ function createDebugInitialState(): GameState {
 }
 
 export const PLAYABLE_INBOX_CAPACITY = 12;
+export function selectInboxEmails(state: GameState): Email[] {
+  return state.inbox.emailIds.reduce<Email[]>((emails, id) => {
+    const email = state.emails[id];
+    if (email) {
+      emails.push(email);
+    }
+    return emails;
+  }, []);
+}
 
 export type CreateGameStoreOptions =
   | { mode?: "debug" }

@@ -1,6 +1,11 @@
 import { describe, expect, test } from "vitest";
 import { createInitialState, type Email, type EmailId } from "../game/state";
-import { createGameStore, type GameStoreState, PLAYABLE_INBOX_CAPACITY } from "./useGame";
+import {
+  createGameStore,
+  type GameStoreState,
+  PLAYABLE_INBOX_CAPACITY,
+  selectInboxEmails,
+} from "./useGame";
 
 function firstEmailId(store: GameStoreState): EmailId {
   const emailId = store.state.inbox.emailIds[0];
@@ -23,6 +28,40 @@ function templateIds(store: GameStoreState): string[] {
 }
 
 describe("game UI store", () => {
+  test("selects inbox emails in inbox order and skips stale ids", () => {
+    const state = createInitialState();
+    const firstEmail: Email = {
+      id: "email_1",
+      sender: "first@example.com",
+      subject: "First message",
+      previewText: "First preview",
+      category: "needs_reply",
+      urgency: "normal",
+      createdAt: 0,
+      threadId: "thread_1",
+      templateId: "team_question",
+      state: "unprocessed",
+    };
+    const secondEmail: Email = {
+      id: "email_2",
+      sender: "second@example.com",
+      subject: "Second message",
+      previewText: "Second preview",
+      category: "junk",
+      urgency: "normal",
+      createdAt: 0,
+      threadId: "thread_2",
+      templateId: "newsletter",
+      state: "unprocessed",
+    };
+
+    state.emails.email_2 = secondEmail;
+    state.emails.email_1 = firstEmail;
+    state.inbox.emailIds = ["missing_email", "email_1", "email_2"];
+
+    expect(selectInboxEmails(state).map((email) => email.id)).toEqual(["email_1", "email_2"]);
+  });
+
   test("spawns and processes a needs-reply email through the engine", () => {
     const store = createGameStore();
 
