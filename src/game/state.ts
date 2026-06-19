@@ -1,4 +1,5 @@
 import type { ScheduledEvent } from "./events";
+import { createInitialDifficultyState } from "./reducers/difficulty";
 
 export type GameStatus = "running" | "paused" | "gameOver";
 
@@ -70,7 +71,7 @@ export type ScoreState = {
 export type DifficultyState = {
   level: number;
   spawnIntervalMs: number;
-  nextSpawnAt: number;
+  nextSpawnAt: number | null;
   batchSize: number;
 };
 
@@ -90,9 +91,12 @@ export type GameState = {
   nextScheduledEventId: number;
 };
 
+export type AmbientSpawnMode = "enabled" | "disabled";
+
 export type InitialStateOptions = {
   capacity?: number;
   rngSeed?: string;
+  ambientSpawn?: AmbientSpawnMode;
 };
 
 export function createInitialState(options: InitialStateOptions = {}): GameState {
@@ -116,12 +120,7 @@ export function createInitialState(options: InitialStateOptions = {}): GameState
       processed: 0,
       mistakes: 0,
     },
-    difficulty: {
-      level: 1,
-      spawnIntervalMs: 5000,
-      nextSpawnAt: 5000,
-      batchSize: 1,
-    },
+    difficulty: createInitialDifficultyState({ ambientSpawn: options.ambientSpawn ?? "enabled" }),
     lastActionResult: null,
     rngSeed: options.rngSeed ?? "inbox-zero",
     nextEmailId: 1,

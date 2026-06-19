@@ -34,7 +34,7 @@ The game is about preventing future inbox growth, not simply clearing current me
 
 Current pressure sources:
 
-- Ambient spawn rate from the difficulty controller.
+- Ambient spawn rate accelerates from elapsed time and processed-email count, so correct clearing and spam-clicked wrong clearing both move the run into higher pressure.
 - Ignored urgent emails scheduling urgent follow-ups.
 - Ignored ordinary work emails scheduling thread follow-ups.
 - Wrong actions scheduling consequence emails.

@@ -6,14 +6,14 @@ import type { EmailCategory, GameState, PlayerAction } from "../state";
 import { correctActionByCategory } from "../state";
 import { removeEmail } from "./emailLifecycle";
 
-export function processEmail(state: Draft<GameState>, command: PlayerCommand): void {
+export function processEmail(state: Draft<GameState>, command: PlayerCommand): boolean {
   if (command.type !== "PROCESS_EMAIL" || state.status === "gameOver") {
-    return;
+    return false;
   }
 
   const email = state.emails[command.emailId];
   if (!email) {
-    return;
+    return false;
   }
 
   const wasCorrect = correctActionByCategory[email.category] === command.action;
@@ -46,6 +46,7 @@ export function processEmail(state: Draft<GameState>, command: PlayerCommand): v
     mistakesDelta: state.score.mistakes - mistakesBefore,
     scheduledConsequences: state.scheduled.length - scheduledBefore,
   };
+  return true;
 }
 
 function scheduleWrongActionConsequences(

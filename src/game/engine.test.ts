@@ -2,19 +2,17 @@ import { describe, expect, test } from "vitest";
 import { wrongActionReplicationRules } from "./content/replicationRules";
 import { defaultSpawnTemplateIds, emailTemplates, getTemplate } from "./content/templates";
 import { update } from "./engine";
+import {
+  deriveDifficulty,
+  LEVELS_PER_BATCH_INCREASE,
+  PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL,
+} from "./reducers/difficulty";
 import { processDueEvents, schedule } from "./scheduler";
 import type { Email, EmailId, EmailThread, GameState, ThreadId } from "./state";
 import { createInitialState } from "./state";
 
 function createQuietState(options: { capacity?: number } = {}): GameState {
-  const state = createInitialState(options);
-  return {
-    ...state,
-    difficulty: {
-      ...state.difficulty,
-      nextSpawnAt: Number.MAX_SAFE_INTEGER,
-    },
-  };
+  return createInitialState({ ...options, ambientSpawn: "disabled" });
 }
 
 function firstEmailId(state: GameState): EmailId {
@@ -286,6 +284,102 @@ describe("Inbox Zero simulation", () => {
 
     expect(state.status).toBe("gameOver");
     expect(state.inbox.emailIds).toHaveLength(1);
+  });
+
+  test("processed mail increases difficulty even when actions are wrong", () => {
+    let state = createQuietState({ capacity: 100 });
+
+    for (let i = 0; i < PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL; i += 1) {
+      state = update(state, {
+        type: "SPAWN_EMAIL",
+        source: "manual",
+        templateId: "team_question",
+      });
+      state = update(state, {
+        type: "PROCESS_EMAIL",
+        emailId: firstEmailId(state),
+        action: "archive",
+      });
+    }
+
+    const expected = deriveDifficulty({
+      elapsedMs: 0,
+      processed: PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL,
+    });
+    expect(state.score.processed).toBe(PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL);
+    expect(state.score.mistakes).toBe(PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL);
+    expect(state.difficulty).toEqual({ ...expected, nextSpawnAt: null });
+    expect(state.scheduled).toEqual([]);
+  });
+
+  test("processed difficulty pulls the next ambient spawn forward", () => {
+    let state = createInitialState({ capacity: 100 });
+
+    for (let i = 0; i < PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL; i += 1) {
+      state = update(state, {
+        type: "SPAWN_EMAIL",
+        source: "manual",
+        templateId: "team_question",
+      });
+      state = update(state, {
+        type: "PROCESS_EMAIL",
+        emailId: firstEmailId(state),
+        action: "archive",
+      });
+    }
+
+    const expected = deriveDifficulty({
+      elapsedMs: 0,
+      processed: PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL,
+    });
+    expect(state.difficulty.nextSpawnAt).toBe(expected.spawnIntervalMs);
+
+    state = update(state, {
+      type: "TICK",
+      now: expected.spawnIntervalMs - 1,
+      dt: expected.spawnIntervalMs - 1,
+    });
+    expect(state.inbox.emailIds).toHaveLength(0);
+
+    state = update(state, { type: "TICK", now: expected.spawnIntervalMs, dt: 1 });
+    expect(state.inbox.emailIds).toHaveLength(1);
+    expect(state.difficulty.nextSpawnAt).toBe(expected.spawnIntervalMs * 2);
+  });
+
+  test("accelerated batch spawning still stops at inbox capacity", () => {
+    const state = createInitialState({ capacity: 2 });
+    state.score.processed = PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL * LEVELS_PER_BATCH_INCREASE;
+
+    const next = update(state, { type: "TICK", now: 5000, dt: 5000 });
+
+    expect(next.status).toBe("gameOver");
+    expect(next.inbox.emailIds).toHaveLength(2);
+  });
+
+  test("paused processing keeps derived difficulty consistent", () => {
+    let state = createQuietState({ capacity: 100 });
+
+    state = update(state, { type: "PAUSE" });
+    for (let i = 0; i < PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL; i += 1) {
+      state = update(state, {
+        type: "SPAWN_EMAIL",
+        source: "manual",
+        templateId: "team_question",
+      });
+      state = update(state, {
+        type: "PROCESS_EMAIL",
+        emailId: firstEmailId(state),
+        action: "archive",
+      });
+    }
+
+    const expected = deriveDifficulty({
+      elapsedMs: 0,
+      processed: PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL,
+    });
+    expect(state.status).toBe("paused");
+    expect(state.score.processed).toBe(PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL);
+    expect(state.difficulty).toEqual({ ...expected, nextSpawnAt: null });
   });
 
   test("processing threaded mail keeps thread indexes consistent", () => {

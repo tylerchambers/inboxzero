@@ -1,4 +1,8 @@
 import { describe, expect, test } from "vitest";
+import {
+  deriveDifficulty,
+  PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL,
+} from "../game/reducers/difficulty";
 import { createInitialState, type Email, type EmailId } from "../game/state";
 import {
   createGameStore,
@@ -96,11 +100,13 @@ describe("game UI store", () => {
 
   test("manual ticks stay quiet before and after debug restart", () => {
     const store = createGameStore();
+    expect(store.getState().state.difficulty.nextSpawnAt).toBeNull();
 
     store.getState().tick(10000);
     expect(store.getState().state.inbox.emailIds).toHaveLength(0);
 
     store.getState().restart();
+    expect(store.getState().state.difficulty.nextSpawnAt).toBeNull();
     store.getState().tick(10000);
 
     expect(store.getState().state.inbox.emailIds).toHaveLength(0);
@@ -149,6 +155,29 @@ describe("game UI store", () => {
     store.getState().tick(1);
     expect(store.getState().state.inbox.emailIds).toHaveLength(1);
     expect(store.getState().state.difficulty.nextSpawnAt).toBe(10000);
+  });
+
+  test("playable processing accelerates the next ambient spawn", () => {
+    const store = createGameStore({ mode: "playable", capacity: 100 });
+
+    for (let i = 0; i < PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL; i += 1) {
+      store.getState().spawn("team_question");
+      store.getState().process(firstEmailId(store.getState()), "archive");
+    }
+
+    const expected = deriveDifficulty({
+      elapsedMs: 0,
+      processed: PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL,
+    });
+    expect(store.getState().state.difficulty.level).toBe(expected.level);
+    expect(store.getState().state.difficulty.spawnIntervalMs).toBe(expected.spawnIntervalMs);
+    expect(store.getState().state.difficulty.nextSpawnAt).toBe(expected.spawnIntervalMs);
+
+    store.getState().tick(expected.spawnIntervalMs - 1);
+    expect(store.getState().state.inbox.emailIds).toHaveLength(0);
+
+    store.getState().tick(1);
+    expect(store.getState().state.inbox.emailIds).toHaveLength(1);
   });
 
   test("playable capacity reaches game over through ambient spawning", () => {

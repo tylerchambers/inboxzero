@@ -24,7 +24,10 @@ export function update(state: GameState, input: GameInput): GameState {
       });
     case "PROCESS_EMAIL":
       return produce(state, (draft) => {
-        processEmail(draft, input);
+        const didProcessEmail = processEmail(draft, input);
+        if (didProcessEmail) {
+          updateDifficulty(draft);
+        }
         checkGameOver(draft);
       });
     case "PAUSE":
@@ -67,7 +70,11 @@ function updateTick(state: GameState, event: Extract<SimEvent, { type: "TICK" }>
 }
 
 function spawnDueEmails(state: Draft<GameState>): void {
-  while (state.difficulty.nextSpawnAt <= state.clock.now && state.status === "running") {
+  while (
+    state.difficulty.nextSpawnAt !== null &&
+    state.difficulty.nextSpawnAt <= state.clock.now &&
+    state.status === "running"
+  ) {
     spawnEmail(state, {
       type: "SPAWN_EMAIL",
       source: "normal_spawn",

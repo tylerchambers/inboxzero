@@ -125,7 +125,7 @@ export function DebugView({
             <Metric label="Mistakes" value={state.score.mistakes} />
             <Metric label="Difficulty level" value={state.difficulty.level} />
             <Metric label="Spawn interval" value={state.difficulty.spawnIntervalMs} />
-            <Metric label="Next spawn at" value={state.difficulty.nextSpawnAt} />
+            <Metric label="Next spawn at" value={state.difficulty.nextSpawnAt ?? "disabled"} />
             <Metric label="Batch size" value={state.difficulty.batchSize} />
             <Metric label="Scheduled" value={state.scheduled.length} />
             <Metric label="Threads" value={Object.keys(state.threads).length} />

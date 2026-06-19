@@ -89,7 +89,7 @@ type ScheduledEvent = {
 };
 ```
 
-`TICK` advances time, drains due events, applies scheduled simulation events, updates difficulty, spawns due ambient emails, and checks game over.
+`TICK` advances time, awards survival score, derives difficulty from the higher of elapsed-time progress and processed-count progress, spawns due ambient emails, applies due scheduled simulation events, and checks game over.
 
 This keeps runs deterministic and testable.
 
@@ -138,11 +138,12 @@ Player action
   -> update score and lastActionResult
   -> remove or transform email
   -> schedule consequences when needed
+  -> re-evaluate difficulty from the updated processed count after successful processing
 ```
 
 Correct actions remove the email, award score, and preserve/carry streak.
 
-Wrong actions remove the original, penalize score/streak/mistakes, and may schedule consequence emails. Delay-zero consequences are scheduled at `state.clock.now`; they are spawned by the next tick, not inline inside `processEmail`.
+Wrong actions remove the original, penalize score/streak/mistakes, and may schedule consequence emails. Delay-zero consequences are scheduled at `state.clock.now`; they are spawned by the next tick, not inline inside `processEmail`. Because total processed count is part of difficulty, processing can immediately pull the next ambient spawn forward.
 
 ## Cancellation and parent ids
 

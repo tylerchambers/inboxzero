@@ -13,14 +13,7 @@ import {
 const DEFAULT_TICK_MS = 1000;
 
 function createDebugInitialState(): GameState {
-  const state = createInitialState();
-  return {
-    ...state,
-    difficulty: {
-      ...state.difficulty,
-      nextSpawnAt: Number.MAX_SAFE_INTEGER,
-    },
-  };
+  return createInitialState({ ambientSpawn: "disabled" });
 }
 
 export const PLAYABLE_INBOX_CAPACITY = 12;
