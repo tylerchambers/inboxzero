@@ -1,0 +1,30 @@
+[tools]
+node = "22.16.0"
+pnpm = "10.12.1"
+
+[settings]
+idiomatic_version_file_enable_tools = ["node"]
+
+[tasks.install]
+description = "Install project dependencies with mise-managed pnpm"
+run = "pnpm install"
+
+[tasks.dev]
+description = "Run Vite dev server"
+run = "pnpm dev"
+
+[tasks.debug]
+description = "Run the React debug UI on http://127.0.0.1:5173"
+run = "pnpm exec vite --host 127.0.0.1 --port 5173 --strictPort"
+
+[tasks.test]
+description = "Run Vitest"
+run = "pnpm test"
+
+[tasks.build]
+description = "Typecheck and build"
+run = "pnpm build"
+
+[tasks.lint]
+description = "Run Biome checks"
+run = "pnpm lint"
