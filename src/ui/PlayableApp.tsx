@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
 import type { Email, EmailId, GameState } from "../game/state";
 import {
-  ActionFeedback,
   type ActionHandler,
   formatAge,
-  GameOverSummary,
-  Metric,
   PlayableEmailCard,
   PressureMeter,
 } from "./sharedComponents";
@@ -72,59 +69,44 @@ export function PlayableView({
 }) {
   return (
     <main className="app-shell">
-      <header className="app-header">
-        <div>
-          <p className="eyebrow">Inbox Zero</p>
-          <h1>Survive the inbox</h1>
-          <p className="lede">
-            Read the message, pick the right action, and keep the queue below capacity.
-          </p>
-        </div>
-      </header>
-
       <section aria-label="Playable inbox" className="playable-layout">
         <aside className="status-rail">
           <section aria-label="Run controls" className="production-controls">
             <button type="button" className="primary-button" onClick={onRestart}>
-              Restart Run
+              Reload mailbox
             </button>
             {state.status === "running" ? (
               <button type="button" onClick={onPause}>
-                Pause
+                Pause sync
               </button>
             ) : (
               <button type="button" onClick={onResume} disabled={state.status === "gameOver"}>
-                Resume
+                Resume sync
               </button>
             )}
           </section>
           <PressureMeter inboxCount={state.inbox.emailIds.length} capacity={state.inbox.capacity} />
-          <div className="stat-grid compact">
-            <Metric label="Score" value={state.score.value} />
-            <Metric label="Processed" value={state.score.processed} />
-            <Metric label="Mistakes" value={state.score.mistakes} />
-            <Metric label="Streak" value={state.score.streak} />
-          </div>
           {state.status === "gameOver" ? (
-            <GameOverSummary state={state} restart={onRestart} />
+            <section aria-label="Mailbox full" className="mailbox-alert" role="alert">
+              <strong>Mailbox capacity reached.</strong>
+              <p>Reload the mailbox to continue receiving messages.</p>
+              <button type="button" onClick={onRestart}>
+                Reload mailbox
+              </button>
+            </section>
           ) : null}
-          <ActionFeedback result={state.lastActionResult} />
         </aside>
 
         <section aria-label="Inbox message list" className="message-list-panel">
           <div className="panel-heading">
             <div>
-              <p className="eyebrow">Inbox</p>
-              <h2>{emails.length} open</h2>
+              <p className="eyebrow">Mail</p>
+              <h2>Inbox</h2>
             </div>
-            <span className={state.status === "running" ? "status-pill running" : "status-pill"}>
-              {state.status}
-            </span>
+            <span className="message-count">{emails.length} messages</span>
           </div>
-          {emails.length === 0 ? (
-            <p className="empty-state">No emails. Enjoy the suspicious quiet.</p>
-          ) : null}
-          <div className="message-list">
+          {emails.length === 0 ? <p className="empty-state">No messages.</p> : null}
+          <div className="message-list scroll-after-four">
             {emails.map((email) => (
               <button
                 key={email.id}
@@ -157,9 +139,9 @@ export function PlayableView({
             />
           ) : (
             <div className="empty-detail start-panel">
-              <p className="eyebrow">Selected message</p>
-              <h2>Nothing to triage.</h2>
-              <p>Waiting for incoming mail.</p>
+              <p className="eyebrow">Reading pane</p>
+              <h2>No message selected</h2>
+              <p>Select a message to preview its contents.</p>
             </div>
           )}
         </section>

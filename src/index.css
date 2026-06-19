@@ -14,14 +14,12 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(99, 102, 241, 0.14), transparent 34rem),
-    linear-gradient(135deg, #f7f8fb 0%, #e6ebf2 100%);
+  background: #f3f4f6;
 }
 
 button {
-  border: 1px solid #c9d0dc;
-  border-radius: 0.65rem;
+  border: 1px solid #c7cdd4;
+  border-radius: 0.25rem;
   background: #fff;
   color: #18212f;
   cursor: pointer;
@@ -30,14 +28,12 @@ button {
   padding: 0.6rem 0.85rem;
   transition:
     background 120ms ease,
-    border-color 120ms ease,
-    transform 120ms ease;
+    border-color 120ms ease;
 }
 
 button:hover:not(:disabled) {
   border-color: #8d99ae;
-  background: #f8fafc;
-  transform: translateY(-1px);
+  background: #eef2f7;
 }
 
 button:disabled {
@@ -72,21 +68,27 @@ h3 {
   display: grid;
   gap: 1.25rem;
   margin: 0 auto;
-  max-width: 1440px;
-  padding: 1.5rem;
+  max-width: 1600px;
+  padding: 1rem;
 }
 
 .app-header,
-.playable-layout,
 .debug-panel,
-.production-controls,
-.run-controls,
-.email-card,
+.run-controls {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  box-shadow: none;
+}
+
+.playable-layout,
 .status-rail,
 .message-list-panel,
-.detail-panel {
-  border: 1px solid rgba(148, 163, 184, 0.45);
-  box-shadow: 0 1.5rem 4rem rgba(15, 23, 42, 0.08);
+.detail-panel,
+.email-card,
+.production-controls {
+  border: 1px solid #d0d7de;
+  border-radius: 0.25rem;
+  background: #fff;
+  box-shadow: none;
 }
 
 .app-header {
@@ -139,8 +141,8 @@ h3 {
   display: grid;
   grid-template-columns: minmax(16rem, 0.8fr) minmax(20rem, 1.05fr) minmax(22rem, 1.35fr);
   gap: 1rem;
-  border-radius: 1.75rem;
-  background: rgba(255, 255, 255, 0.5);
+  border-radius: 0.25rem;
+  background: #fff;
   padding: 1rem;
 }
 
@@ -151,8 +153,8 @@ h3 {
 .production-controls,
 .run-controls,
 .email-card {
-  border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.88);
+  border-radius: 0.25rem;
+  background: #fff;
   padding: 1rem;
 }
 
@@ -180,15 +182,16 @@ h3 {
 .pressure-card {
   display: grid;
   gap: 0.65rem;
-  border-radius: 1rem;
-  background: #111827;
-  color: #fff;
+  border: 1px solid #9aa4b2;
+  border-radius: 0.25rem;
+  background: #fff;
+  color: #18212f;
   padding: 1rem;
 }
 
 .pressure-card p {
   margin-bottom: 0;
-  color: #cbd5e1;
+  color: #334155;
 }
 
 .pressure-heading,
@@ -205,7 +208,7 @@ h3 {
   overflow: hidden;
   height: 0.6rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
+  background: #e5e7eb;
 }
 
 .pressure-fill {
@@ -240,9 +243,24 @@ dd {
   min-height: 34rem;
 }
 
+.message-list-panel {
+  --message-row-gap: 0.5rem;
+  --message-row-height: 7.25rem;
+}
+
 .message-list {
   display: grid;
-  gap: 0.65rem;
+  gap: var(--message-row-gap);
+}
+
+.message-list.scroll-after-four {
+  --visible-message-rows: 4;
+  max-height: calc(
+    (var(--message-row-height) * var(--visible-message-rows)) +
+    (var(--message-row-gap) * (var(--visible-message-rows) - 1))
+  );
+  overflow-y: auto;
+  padding-right: 0.25rem;
 }
 
 .message-row {
@@ -253,6 +271,8 @@ dd {
   background: #f8fafc;
   padding: 0.85rem;
   text-align: left;
+  height: var(--message-row-height);
+  overflow: hidden;
 }
 
 .message-row.selected {
@@ -296,14 +316,14 @@ dd {
 
 .priority.urgent,
 .feedback.danger {
-  background: #fee2e2;
-  color: #991b1b;
+  background: #f3f4f6;
+  color: #334155;
 }
 
 .status-pill.running,
 .feedback {
-  background: #dcfce7;
-  color: #14532d;
+  background: #f3f4f6;
+  color: #334155;
 }
 
 .email-card {
@@ -331,9 +351,24 @@ dd {
 }
 
 .feedback,
-.game-over {
-  border-radius: 1rem;
+.game-over,
+.mailbox-alert {
+  border: 1px solid #d0d7de;
+  border-radius: 0.25rem;
   padding: 1rem;
+}
+
+.message-count {
+  color: #4b5563;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.mailbox-alert {
+  display: grid;
+  gap: 0.5rem;
+  background: #f8fafc;
+  color: #334155;
 }
 
 .feedback.muted {
@@ -349,13 +384,13 @@ dd {
 }
 
 .game-over {
-  background: #111827;
-  color: #fff;
+  background: #f8fafc;
+  color: #334155;
 }
 
 .game-over .eyebrow,
 .game-over p {
-  color: #cbd5e1;
+  color: #4b5563;
 }
 
 .empty-detail {

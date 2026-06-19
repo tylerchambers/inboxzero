@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { createInitialState, type Email } from "./game/state";
+import stylesheet from "./index.css?inline";
 import { DebugApp, DebugView } from "./ui/DebugApp";
 import { DebugEmailCard, DebugScheduledEvents } from "./ui/debugComponents";
 import { PlayableApp, PlayableView } from "./ui/PlayableApp";
@@ -38,6 +39,8 @@ describe("playable inbox UI", () => {
     expect(markup).not.toContain("fake_security_alert");
     expect(markup).not.toContain("email_1");
     expect(markup).not.toContain("thread_1");
+    expect(markup).not.toContain("Reply message");
+    expect(markup).not.toContain("Type your reply");
   });
 
   test("debug card keeps email metadata visible", () => {
@@ -131,9 +134,12 @@ describe("playable inbox UI", () => {
   test("production app hides debug controls and metadata", () => {
     const markup = renderToStaticMarkup(<PlayableApp />);
 
-    expect(markup).toContain("Survive the inbox");
-    expect(markup).toContain("Restart Run");
-    expect(markup).toContain("Pause");
+    expect(markup).toContain("Reload mailbox");
+    expect(markup).toContain("Pause sync");
+    expect(markup).toContain("Inbox pressure");
+    for (const hiddenText of ["Survive the inbox", "Score", "Processed", "Mistakes", "Streak"]) {
+      expect(markup).not.toContain(hiddenText);
+    }
     for (const hiddenText of [
       "Debug mode",
       "Playable run",
@@ -175,10 +181,13 @@ describe("playable inbox UI", () => {
       "Verify your account",
       "Your account will be locked unless you act now.",
       "Report Spam",
-      "Restart Run",
+      "Reload mailbox",
     ]) {
       expect(markup).toContain(visibleText);
     }
+    expect(markup).toContain("Reply");
+    expect(markup).toContain("Archive");
+    expect(markup).toContain("Report Spam");
     for (const hiddenText of [
       "Category",
       "Template",
@@ -192,6 +201,52 @@ describe("playable inbox UI", () => {
     ]) {
       expect(markup).not.toContain(hiddenText);
     }
+  });
+
+  test("playable view renders all messages with a four-row scroll cap", () => {
+    const state = createInitialState({ capacity: 12 });
+    const emails = Array.from({ length: 5 }, (_, index): Email => {
+      const messageNumber = index + 1;
+      return {
+        ...email,
+        id: `email_${messageNumber}`,
+        subject: `Subject ${messageNumber}`,
+        threadId: `thread_${messageNumber}`,
+        templateId: `template_${messageNumber}`,
+      };
+    });
+
+    for (const inboxEmail of emails) {
+      state.emails[inboxEmail.id] = inboxEmail;
+    }
+    state.inbox.emailIds = emails.map((inboxEmail) => inboxEmail.id);
+
+    const markup = renderToStaticMarkup(
+      <PlayableView
+        state={state}
+        emails={emails}
+        selectedEmail={emails[0] ?? null}
+        onRestart={noopRestart}
+        onPause={noopRestart}
+        onResume={noopRestart}
+        onSelectEmail={() => undefined}
+        onProcessEmail={noopProcess}
+      />,
+    );
+
+    for (const inboxEmail of emails) {
+      expect(markup).toContain(inboxEmail.subject);
+    }
+    expect(markup).toContain("message-list scroll-after-four");
+  });
+
+  test("message list css caps visible rows before scrolling", () => {
+    expect(stylesheet).toContain(".message-list.scroll-after-four");
+    expect(stylesheet).toContain("--visible-message-rows: 4");
+    expect(stylesheet).toContain("(var(--message-row-height) * var(--visible-message-rows))");
+    expect(stylesheet).toContain("(var(--message-row-gap) * (var(--visible-message-rows) - 1))");
+    expect(stylesheet).toContain("height: var(--message-row-height)");
+    expect(stylesheet).toContain("overflow-y: auto");
   });
 
   test("debug view exposes QA metadata with a populated inbox", () => {
