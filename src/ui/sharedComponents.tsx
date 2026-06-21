@@ -30,7 +30,7 @@ export function PlayableEmailCard({
       </div>
       <h2>{email.subject}</h2>
       <p className="sender-line">From {email.sender}</p>
-      <p className="message-body">{email.previewText}</p>
+      <p className="message-body">{email.bodyText}</p>
       <ActionButtons emailId={email.id} disabled={disabled} onProcessEmail={onProcessEmail} />
     </article>
   );

@@ -1,5 +1,5 @@
 import type { Draft } from "immer";
-import { defaultSpawnTemplateIds, getTemplate } from "../content/templates";
+import { getAmbientSpawnTemplateIds, getTemplate } from "../content/templates";
 import type { SimEvent } from "../events";
 import { pickIndex } from "../rng";
 import { scheduleInto } from "../scheduler";
@@ -43,6 +43,8 @@ export function spawnEmail(state: Draft<GameState>, event: SimEvent): void {
       sender: template.sender,
       subject: template.subject,
       previewText: template.previewText,
+      bodyText: template.bodyText,
+      weirdnessLevel: template.weirdnessLevel,
       category: template.category,
       urgency: template.urgency,
       createdAt: state.clock.now,
@@ -86,12 +88,10 @@ export function spawnEmail(state: Draft<GameState>, event: SimEvent): void {
 }
 
 function pickDefaultTemplateId(state: Draft<GameState>): TemplateId {
-  const templateId =
-    defaultSpawnTemplateIds[
-      pickIndex(state.rngSeed, state.nextEmailId, defaultSpawnTemplateIds.length)
-    ];
+  const templateIds = getAmbientSpawnTemplateIds(state.difficulty.weirdnessLevel);
+  const templateId = templateIds[pickIndex(state.rngSeed, state.nextEmailId, templateIds.length)];
   if (!templateId) {
-    throw new Error("No default email templates configured");
+    throw new Error("No ambient email templates configured");
   }
   return templateId;
 }

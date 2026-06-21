@@ -12,6 +12,9 @@ const email: Email = {
   sender: "security@amaz0n-alerts.example",
   subject: "Verify your account",
   previewText: "Your account will be locked unless you act now.",
+  bodyText:
+    "Your account will be locked unless you act now. Use the attached verification portal to restore access. This sender is not your company security team.",
+  weirdnessLevel: 0,
   category: "spam",
   urgency: "normal",
   createdAt: 0,
@@ -32,10 +35,13 @@ describe("playable inbox UI", () => {
     expect(markup).toContain("security@amaz0n-alerts.example");
     expect(markup).toContain("Verify your account");
     expect(markup).toContain("Your account will be locked unless you act now.");
+    expect(markup).toContain("This sender is not your company security team.");
     expect(markup).toContain("Routine");
     expect(markup).not.toContain("Category");
     expect(markup).not.toContain("Template");
     expect(markup).not.toContain("Thread");
+    expect(markup).not.toContain("Weirdness");
+    expect(markup).not.toContain("Weirdness level");
     expect(markup).not.toContain("fake_security_alert");
     expect(markup).not.toContain("email_1");
     expect(markup).not.toContain("thread_1");
@@ -52,6 +58,7 @@ describe("playable inbox UI", () => {
     expect(markup).toContain("Template");
     expect(markup).toContain("ID");
     expect(markup).toContain("Thread");
+    expect(markup).toContain("Weirdness");
     expect(markup).toContain("fake_security_alert");
     expect(markup).toContain("email_1");
     expect(markup).toContain("thread_1");
@@ -153,6 +160,8 @@ describe("playable inbox UI", () => {
       "Template",
       "ID",
       "Thread",
+      "Weirdness",
+      "Weirdness level",
     ]) {
       expect(markup).not.toContain(hiddenText);
     }
@@ -180,6 +189,7 @@ describe("playable inbox UI", () => {
       "security@amaz0n-alerts.example",
       "Verify your account",
       "Your account will be locked unless you act now.",
+      "This sender is not your company security team.",
       "Report Spam",
       "Reload mailbox",
     ]) {
@@ -193,6 +203,8 @@ describe("playable inbox UI", () => {
       "Template",
       "ID",
       "Thread",
+      "Weirdness",
+      "Weirdness level",
       "fake_security_alert",
       "email_1",
       "thread_1",
@@ -282,11 +294,15 @@ describe("playable inbox UI", () => {
     for (const visibleText of [
       "Mechanic cockpit",
       "Spawn Random",
+      "Spawn Occult Compliance",
+      "Spawn Secret Police",
       "Scheduled events",
       "Category",
       "Template",
       "ID",
       "Thread",
+      "Weirdness",
+      "Weirdness level",
       "fake_security_alert",
       "email_1",
       "thread_1",
@@ -307,9 +323,12 @@ describe("playable inbox UI", () => {
       "Auto tick",
       "Restart Debug",
       "Spawn Random",
-      "Spawn Needs Reply",
+      "Spawn HR Training",
       "Scheduled events",
       "Email templates",
+      "Weirdness level",
+      "Spawn Occult Compliance",
+      "Spawn Secret Police",
     ]) {
       expect(markup).toContain(visibleText);
     }

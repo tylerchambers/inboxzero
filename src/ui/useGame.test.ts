@@ -1,8 +1,5 @@
 import { describe, expect, test } from "vitest";
-import {
-  deriveDifficulty,
-  PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL,
-} from "../game/reducers/difficulty";
+import { deriveDifficulty } from "../game/reducers/difficulty";
 import { createInitialState, type Email, type EmailId } from "../game/state";
 import {
   createGameStore,
@@ -39,6 +36,8 @@ describe("game UI store", () => {
       sender: "first@example.com",
       subject: "First message",
       previewText: "First preview",
+      bodyText: "First body",
+      weirdnessLevel: 0,
       category: "needs_reply",
       urgency: "normal",
       createdAt: 0,
@@ -51,6 +50,8 @@ describe("game UI store", () => {
       sender: "second@example.com",
       subject: "Second message",
       previewText: "Second preview",
+      bodyText: "Second body",
+      weirdnessLevel: 0,
       category: "junk",
       urgency: "normal",
       createdAt: 0,
@@ -112,6 +113,15 @@ describe("game UI store", () => {
     expect(store.getState().state.inbox.emailIds).toHaveLength(0);
   });
 
+  test("debug ticks track weirdness without ambient spawning", () => {
+    const store = createGameStore();
+
+    store.getState().tick(480000);
+
+    expect(store.getState().state.inbox.emailIds).toHaveLength(0);
+    expect(store.getState().state.difficulty.weirdnessLevel).toBe(4);
+  });
+
   test("restart keeps ordinary thread pressure deterministic in the debug store", () => {
     const store = createGameStore();
 
@@ -157,27 +167,17 @@ describe("game UI store", () => {
     expect(store.getState().state.difficulty.nextSpawnAt).toBe(10000);
   });
 
-  test("playable processing accelerates the next ambient spawn", () => {
+  test("playable elapsed time accelerates the next ambient spawn", () => {
     const store = createGameStore({ mode: "playable", capacity: 100 });
 
-    for (let i = 0; i < PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL; i += 1) {
-      store.getState().spawn("team_question");
-      store.getState().process(firstEmailId(store.getState()), "archive");
-    }
-
-    const expected = deriveDifficulty({
-      elapsedMs: 0,
-      processed: PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL,
-    });
-    expect(store.getState().state.difficulty.level).toBe(expected.level);
-    expect(store.getState().state.difficulty.spawnIntervalMs).toBe(expected.spawnIntervalMs);
-    expect(store.getState().state.difficulty.nextSpawnAt).toBe(expected.spawnIntervalMs);
-
-    store.getState().tick(expected.spawnIntervalMs - 1);
-    expect(store.getState().state.inbox.emailIds).toHaveLength(0);
+    store.getState().tick(59999);
+    expect(store.getState().state.difficulty.nextSpawnAt).toBe(60000);
 
     store.getState().tick(1);
-    expect(store.getState().state.inbox.emailIds).toHaveLength(1);
+    const expected = deriveDifficulty({ elapsedMs: 60000, processed: 0 });
+    expect(store.getState().state.difficulty.level).toBe(expected.level);
+    expect(store.getState().state.difficulty.spawnIntervalMs).toBe(expected.spawnIntervalMs);
+    expect(store.getState().state.difficulty.nextSpawnAt).toBe(64500);
   });
 
   test("playable capacity reaches game over through ambient spawning", () => {
@@ -231,6 +231,7 @@ describe("game UI store", () => {
   test("custom initial state restarts to the captured custom defaults", () => {
     const initialState = createInitialState({ capacity: 2, rngSeed: "custom-debug" });
     initialState.difficulty.nextSpawnAt = 12345;
+    initialState.difficulty.weirdnessLevel = 3;
 
     const store = createGameStore({ initialState });
     initialState.inbox.capacity = 99;
@@ -243,5 +244,6 @@ describe("game UI store", () => {
     expect(current.state.inbox.capacity).toBe(2);
     expect(current.state.rngSeed).toBe("custom-debug");
     expect(current.state.difficulty.nextSpawnAt).toBe(12345);
+    expect(current.state.difficulty.weirdnessLevel).toBe(3);
   });
 });

@@ -42,11 +42,14 @@ export function DebugApp() {
 
 const DEBUG_SPAWN_BUTTONS: readonly { label: string; templateId?: TemplateId }[] = [
   { label: "Spawn Random" },
-  { label: "Spawn Spam", templateId: "fake_security_alert" },
-  { label: "Spawn Link", templateId: "document_approval" },
-  { label: "Spawn Newsletter", templateId: "newsletter" },
-  { label: "Spawn Needs Reply", templateId: "team_question" },
-  { label: "Spawn Urgent", templateId: "need_budget_numbers" },
+  { label: "Spawn HR Training", templateId: "hr_training_due" },
+  { label: "Spawn Security Notice", templateId: "vpn_certificate_expiring" },
+  { label: "Spawn Phishing", templateId: "fake_security_alert" },
+  { label: "Spawn Meeting", templateId: "calendar_sync_request" },
+  { label: "Spawn Document Approval", templateId: "document_approval" },
+  { label: "Spawn MR Review", templateId: "merge_request_review" },
+  { label: "Spawn Occult Compliance", templateId: "compliance_sigil_draft" },
+  { label: "Spawn Secret Police", templateId: "field_office_observation" },
 ];
 
 export function DebugView({
@@ -124,6 +127,7 @@ export function DebugView({
             <Metric label="Processed" value={state.score.processed} />
             <Metric label="Mistakes" value={state.score.mistakes} />
             <Metric label="Difficulty level" value={state.difficulty.level} />
+            <Metric label="Weirdness level" value={state.difficulty.weirdnessLevel} />
             <Metric label="Spawn interval" value={state.difficulty.spawnIntervalMs} />
             <Metric label="Next spawn at" value={state.difficulty.nextSpawnAt ?? "disabled"} />
             <Metric label="Batch size" value={state.difficulty.batchSize} />
@@ -154,8 +158,8 @@ export function DebugView({
           <ul>
             {emailTemplates.map((template) => (
               <li key={template.id}>
-                <strong>{template.id}</strong> — {template.category}, {template.urgency},{" "}
-                {template.sender}, {template.subject}
+                <strong>{template.id}</strong> — {template.category}, {template.urgency}, weirdness{" "}
+                {template.weirdnessLevel}, {template.sender}, {template.subject}
               </li>
             ))}
           </ul>

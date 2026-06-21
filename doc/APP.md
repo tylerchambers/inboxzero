@@ -79,15 +79,13 @@ Debug is a local QA tool. It may show deterministic controls, manual spawning, s
 
 ## Current content model
 
-Emails are generated from templates in `src/game/content/templates.ts`. Templates encode category, urgency, sender, subject, preview, and thread behavior.
+Emails are generated from templates in `src/game/content/templates.ts`. Templates encode category, urgency, sender, subject, inbox preview, message body, weirdness level, and thread behavior.
 
-Known template families:
+Known content families:
 
-- ordinary work thread: `team_question`, `checking_on_rollout`, `adding_project_channel`
-- link workflow: `document_approval`
-- junk/newsletter: `newsletter`
-- spam/phishing: `fake_security_alert`
-- urgent escalation: `need_budget_numbers`, `following_up`, `need_response_asap`
+- mundane corporate work: HR training, security notices, meeting replies, document approvals, merge request reviews, access/invoice approvals, incident notes, onboarding, vendor junk, phishing.
+- weirdness progression: `DifficultyState.weirdnessLevel` 0-4 is derived from elapsed engine time and gates ambient template pools.
+- late-game surreal/occult/secret-police content: sigil review, redacted appendix, shadow login, field-office observation, CIA-flavored media request, dead-drop maintenance.
 
 Wrong-action consequence rules live in `src/game/content/replicationRules.ts`.
 

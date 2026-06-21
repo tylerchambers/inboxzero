@@ -13,11 +13,12 @@ export function DebugEmailCard({
   return (
     <article className="email-card debug-card">
       <h3>{email.subject}</h3>
-      <p>{email.previewText}</p>
+      <p>{email.bodyText}</p>
       <dl className="stat-grid debug-metadata">
         <Metric label="Sender" value={email.sender} />
         <Metric label="Category" value={email.category} />
         <Metric label="Urgency" value={email.urgency} />
+        <Metric label="Weirdness" value={email.weirdnessLevel} />
         <Metric label="Template" value={email.templateId} />
         <Metric label="ID" value={email.id} />
         <Metric label="Thread" value={email.threadId ?? "none"} />

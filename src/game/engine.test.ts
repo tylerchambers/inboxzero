@@ -1,14 +1,15 @@
 import { describe, expect, test } from "vitest";
 import { wrongActionReplicationRules } from "./content/replicationRules";
-import { defaultSpawnTemplateIds, emailTemplates, getTemplate } from "./content/templates";
-import { update } from "./engine";
 import {
-  deriveDifficulty,
-  LEVELS_PER_BATCH_INCREASE,
-  PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL,
-} from "./reducers/difficulty";
+  ambientSpawnTemplateIdsByWeirdnessLevel,
+  emailTemplates,
+  getAmbientSpawnTemplateIds,
+  getTemplate,
+} from "./content/templates";
+import { update } from "./engine";
+import { deriveDifficulty, PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL } from "./reducers/difficulty";
 import { processDueEvents, schedule } from "./scheduler";
-import type { Email, EmailId, EmailThread, GameState, ThreadId } from "./state";
+import type { Email, EmailId, EmailThread, GameState, ThreadId, WeirdnessLevel } from "./state";
 import { createInitialState } from "./state";
 
 function createQuietState(options: { capacity?: number } = {}): GameState {
@@ -56,6 +57,9 @@ describe("Inbox Zero simulation", () => {
     expect(email).toMatchObject({
       sender: "alex@company.com",
       subject: "Question about the rollout",
+      bodyText:
+        "Hi — can you confirm the launch checklist is current before I update the release notes? I mainly need a yes or no on the owner column and the rollback step.",
+      weirdnessLevel: 0,
       category: "needs_reply",
       state: "unprocessed",
     });
@@ -286,6 +290,26 @@ describe("Inbox Zero simulation", () => {
     expect(state.inbox.emailIds).toHaveLength(1);
   });
 
+  test("difficulty tracks elapsed weirdness levels", () => {
+    let state = createQuietState();
+
+    state = update(state, { type: "TICK", now: 119999, dt: 119999 });
+    expect(state.difficulty.weirdnessLevel).toBe(0);
+
+    state = update(state, { type: "TICK", now: 120000, dt: 1 });
+    expect(state.difficulty.weirdnessLevel).toBe(1);
+
+    state = update(state, { type: "TICK", now: 240000, dt: 120000 });
+    expect(state.difficulty.weirdnessLevel).toBe(2);
+
+    state = update(state, { type: "TICK", now: 360000, dt: 120000 });
+    expect(state.difficulty.weirdnessLevel).toBe(3);
+
+    state = update(state, { type: "TICK", now: 480000, dt: 120000 });
+    expect(state.difficulty.weirdnessLevel).toBe(4);
+    expect(state.clock.elapsedMs).toBe(480000);
+  });
+
   test("processed mail increases difficulty even when actions are wrong", () => {
     let state = createQuietState({ capacity: 100 });
 
@@ -308,8 +332,19 @@ describe("Inbox Zero simulation", () => {
     });
     expect(state.score.processed).toBe(PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL);
     expect(state.score.mistakes).toBe(PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL);
-    expect(state.difficulty).toEqual({ ...expected, nextSpawnAt: null });
+    expect(state.difficulty).toEqual({ ...expected, nextSpawnAt: null, weirdnessLevel: 0 });
     expect(state.scheduled).toEqual([]);
+  });
+
+  test("elapsed difficulty pulls the next ambient spawn forward", () => {
+    let state = createInitialState({ capacity: 100 });
+
+    state = update(state, { type: "TICK", now: 59999, dt: 59999 });
+    expect(state.difficulty.nextSpawnAt).toBe(60000);
+
+    state = update(state, { type: "TICK", now: 60000, dt: 1 });
+    expect(state.difficulty.spawnIntervalMs).toBe(4500);
+    expect(state.difficulty.nextSpawnAt).toBe(64500);
   });
 
   test("processed difficulty pulls the next ambient spawn forward", () => {
@@ -343,14 +378,14 @@ describe("Inbox Zero simulation", () => {
 
     state = update(state, { type: "TICK", now: expected.spawnIntervalMs, dt: 1 });
     expect(state.inbox.emailIds).toHaveLength(1);
-    expect(state.difficulty.nextSpawnAt).toBe(expected.spawnIntervalMs * 2);
   });
 
   test("accelerated batch spawning still stops at inbox capacity", () => {
-    const state = createInitialState({ capacity: 2 });
-    state.score.processed = PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL * LEVELS_PER_BATCH_INCREASE;
+    let state = createQuietState({ capacity: 2 });
+    state = update(state, { type: "TICK", now: 300000, dt: 300000 });
+    state = { ...state, difficulty: { ...state.difficulty, nextSpawnAt: 300001 } };
 
-    const next = update(state, { type: "TICK", now: 5000, dt: 5000 });
+    const next = update(state, { type: "TICK", now: 300001, dt: 1 });
 
     expect(next.status).toBe("gameOver");
     expect(next.inbox.emailIds).toHaveLength(2);
@@ -379,7 +414,7 @@ describe("Inbox Zero simulation", () => {
     });
     expect(state.status).toBe("paused");
     expect(state.score.processed).toBe(PROCESSED_EMAILS_PER_DIFFICULTY_LEVEL);
-    expect(state.difficulty).toEqual({ ...expected, nextSpawnAt: null });
+    expect(state.difficulty).toEqual({ ...expected, nextSpawnAt: null, weirdnessLevel: 0 });
   });
 
   test("processing threaded mail keeps thread indexes consistent", () => {
@@ -592,12 +627,62 @@ describe("Inbox Zero simulation", () => {
     expect(afterTick.inbox.emailIds.length).toBeGreaterThan(0);
   });
 
+  test("ambient template pools gate templates by weirdness", () => {
+    for (const level of [0, 1, 2, 3, 4] satisfies readonly WeirdnessLevel[]) {
+      const templateIds = getAmbientSpawnTemplateIds(level);
+      expect(templateIds.length).toBeGreaterThan(0);
+      for (const templateId of templateIds) {
+        expect(getTemplate(templateId).weirdnessLevel).toBeLessThanOrEqual(level);
+      }
+    }
+
+    expect(getAmbientSpawnTemplateIds(0)).not.toContain("field_office_observation");
+    expect(getAmbientSpawnTemplateIds(4)).toEqual(
+      expect.arrayContaining([
+        "field_office_observation",
+        "sigil_attendance_required",
+        "cia_media_request",
+        "dead_drop_calendar_hold",
+        "directorate_read_receipt",
+      ]),
+    );
+  });
+
+  test("random spawns use the current weirdness pool", () => {
+    let state = createQuietState({ capacity: 100 });
+    state = update(state, { type: "TICK", now: 480000, dt: 480000 });
+
+    for (let index = 0; index < 50; index += 1) {
+      state = update(state, { type: "SPAWN_EMAIL", source: "manual" });
+    }
+
+    const levelFourPool = getAmbientSpawnTemplateIds(4);
+    const lowerLevelPool = getAmbientSpawnTemplateIds(3);
+    const levelFourOnlyIds = levelFourPool.filter(
+      (templateId) => !lowerLevelPool.includes(templateId),
+    );
+    const spawnedTemplateIds = inboxTemplateIds(state);
+
+    for (const templateId of spawnedTemplateIds) {
+      expect(levelFourPool).toContain(templateId);
+    }
+    expect(spawnedTemplateIds.some((templateId) => levelFourOnlyIds.includes(templateId))).toBe(
+      true,
+    );
+  });
+
   test("template references are internally valid", () => {
-    for (const templateId of defaultSpawnTemplateIds) {
-      expect(getTemplate(templateId).id).toBe(templateId);
+    for (const templateIds of Object.values(ambientSpawnTemplateIdsByWeirdnessLevel)) {
+      for (const templateId of templateIds) {
+        expect(getTemplate(templateId).id).toBe(templateId);
+      }
     }
 
     for (const template of emailTemplates) {
+      expect(template.sender.trim()).not.toBe("");
+      expect(template.subject.trim()).not.toBe("");
+      expect(template.previewText.trim()).not.toBe("");
+      expect(template.bodyText.trim()).not.toBe("");
       for (const step of template.escalation ?? []) {
         expect(getTemplate(step.templateId).id).toBe(step.templateId);
       }

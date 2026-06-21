@@ -7,6 +7,7 @@ export type EmailId = string;
 export type ThreadId = string;
 export type TemplateId = string;
 export type ScheduledEventId = string;
+export type WeirdnessLevel = 0 | 1 | 2 | 3 | 4;
 
 export type EmailCategory = "spam" | "needs_reply" | "needs_link_click" | "urgent_reply" | "junk";
 
@@ -33,6 +34,8 @@ export type Email = {
   sender: string;
   subject: string;
   previewText: string;
+  bodyText: string;
+  weirdnessLevel: WeirdnessLevel;
   category: EmailCategory;
   urgency: EmailUrgency;
   createdAt: number;
@@ -73,6 +76,7 @@ export type DifficultyState = {
   spawnIntervalMs: number;
   nextSpawnAt: number | null;
   batchSize: number;
+  weirdnessLevel: WeirdnessLevel;
 };
 
 export type GameState = {
